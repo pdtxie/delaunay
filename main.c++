@@ -1,3 +1,9 @@
+extern "C" {
+#define TRILIBRARY
+#define REAL double
+#include "triangle.h"
+}
+
 #include <iostream>
 
 using namespace std;
