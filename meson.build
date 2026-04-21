@@ -15,7 +15,7 @@ triangle_lib = static_library(
 
 voronoi_exe = executable(
   'voronoi',
-  'main.c++',
+  ['main.c++', 'predicates.c'],
   include_directories : triangle_inc,
   link_with : triangle_lib,
   install : false,
