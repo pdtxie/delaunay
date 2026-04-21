@@ -1,6 +1,5 @@
 #!/bin/sh
 
 rm -Rf build
-cmake -S . -B build
-cd build/
-make
+meson setup build
+meson compile -C build

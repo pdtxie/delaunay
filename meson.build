@@ -1,0 +1,31 @@
+project(
+  'voronoi',
+  ['c', 'cpp'],
+  default_options: ['cpp_std=c++20']
+)
+
+triangle_inc = include_directories('triangle')
+
+triangle_lib = static_library(
+  'triangle',
+  'triangle/triangle.c',
+  include_directories : triangle_inc,
+  install : false,
+)
+
+voronoi_exe = executable(
+  'voronoi',
+  'main.c++',
+  include_directories : triangle_inc,
+  link_with : triangle_lib,
+  install : false,
+  )
+
+x11_dep = dependency('x11', required : true)
+
+showme_exe = executable(
+  'showme',
+  'triangle/showme.c',
+  dependencies : x11_dep,
+  install : false,
+)
