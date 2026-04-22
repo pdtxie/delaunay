@@ -1,3 +1,4 @@
+#include <assert.h>
 extern "C" {
 #define TRILIBRARY
 #define REAL double
@@ -13,7 +14,6 @@ struct edgeref {
     quadedge *e = nullptr;
     int r = 0;  // {0, 1, 2, 3}
 
-public:
     edgeref() = default;
     edgeref(quadedge *e, int r) : e(e), r(r) {}
     static edgeref makeedge();
@@ -74,10 +74,31 @@ edgeref edgeref::oprev() {
     return this->e->es[(this->r + 1) % 4].next.rot();
 }
 
+inline std::ostream& operator<<(std::ostream& os, const edgeref& ref) {
+	return os << "edgeref(e=" << ref.e << ", r=" << ref.r << ")";
+}
+
+inline std::ostream& operator<<(std::ostream& os, const edgerecord& rec) {
+	return os << "edgerecord(data=" << rec.data << ", next=" << rec.next;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const quadedge& q) {
+	for (int i = 0; i < 4; i++)
+		os << "[" << i << "] " << q.es[i] << " / ";
+
+	return os;
+}
+
 using namespace std;
 
 int main(void) {
-    cout << "hello world\n" << endl;
+	edgeref e = edgeref::makeedge();
+
+	cout << e << endl;
+	cout << e.onext() << endl;
+	cout << e.oprev() << endl;
+
+	cout << *e.e << endl;
 
     return 0;
 }
