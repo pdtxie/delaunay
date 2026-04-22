@@ -15,11 +15,19 @@ triangle_lib = static_library(
 
 voronoi_exe = executable(
   'voronoi',
-  ['main.c++', 'predicates.c'],
+  ['src/main.c++', 'src/quadedge.c++', 'src/predicates.c'],
   include_directories : triangle_inc,
   link_with : triangle_lib,
   install : false,
-  )
+)
+
+test_exe = executable(
+  'topology_tests',
+  ['tests/test.c++', 'src/quadedge.c++', 'src/predicates.c'],
+  include_directories : triangle_inc,
+  link_with : triangle_lib,
+  install : false,
+)
 
 x11_dep = dependency('x11', required : true)
 
