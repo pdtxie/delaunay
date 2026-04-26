@@ -1,13 +1,16 @@
+#include <format>
 extern "C" {
 #define TRILIBRARY
 #define REAL double
-#include "predicates.h"
 #include "triangle.h"
+#include "predicates.h"
 }
 
+#include <limits>
+
 #include <cassert>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <vector>
 
 #include "quadedge.h"
@@ -16,40 +19,173 @@ using namespace std;
 
 // parse input .node
 vector<vertex> parse_nodes(string path) {
-	ifstream infile(path);
-	int n, dim, nattr, bs;
-	infile >> n >> dim >> nattr >> bs;
+    ifstream infile(path);
+    int n, dim, nattr, bs;
+    infile >> n >> dim >> nattr >> bs;
 
-	printf("parsing... n=%d, dim=%d, nattr=%d, bs=%d\n", n, dim, nattr, bs);
+    printf("parsing... n=%d, dim=%d, nattr=%d, bs=%d\n", n, dim, nattr, bs);
 
-	vector<vertex> v;
+    vector<vertex> v;
 
-	for (int i = 0; i < n; i++) {
-		int id;
-		double x, y, b;
-		vector<int> attrs(nattr);
+    for (int i = 0; i < n; i++) {
+        int id;
+        double x, y, b;
+        vector<int> attrs(nattr);
 
-		infile >> id >> x >> y;
-		for (int j = 0; j < nattr; j++)
-			infile >> attrs[j];
+        infile >> id >> x >> y;
+        for (int j = 0; j < nattr; j++)
+            infile >> attrs[j];
 
-		if (bs)
-			infile >> b;
+        if (bs)
+            infile >> b;
 
-		v.push_back(vertex(id, x, y));
-	}
+        v.push_back(vertex(id, x, y));
+    }
 
-	return v;
+    return v;
 }
 
+// TODO: hardcoded to super triangle rn
+void write(string path, triangulation tr) {
+	ofstream ele(path + "/out.ele");
+
+	ele << "1 3 0" << endl;
+	ele << "1 ";
+	edgeref t = tr.e;
+	do {
+		ele << t.org().id << " ";
+		t = t.lnext();
+	} while (t != tr.e);
+
+
+	ofstream node(path + "/out.node");
+	
+	node << "15 2 0 0" << endl;
+
+	for (vertex v : tr.vs) {
+		node << format("{} {} {}", v.id, v.x, v.y) << endl;
+	}
+}
+
+triangulation super_triangle(vector<vertex> vs) {
+    // make super triangle around all the points
+    double DMAX = numeric_limits<double>::max(),
+           DMIN = numeric_limits<double>::lowest();
+    REAL xmin = DMAX, xmax = DMIN, ymin = DMAX, ymax = DMIN;
+
+    for (vertex v : vs) {
+        if (v.x < xmin)
+            xmin = v.x;
+        if (v.x > xmax)
+            xmax = v.x;
+        if (v.y < ymin)
+            ymin = v.y;
+        if (v.y > ymax)
+            ymax = v.y;
+    }
+
+    REAL dx = xmax - xmin, dy = ymax - ymin;
+    REAL cx = (xmin + xmax) / 2;
+    REAL pad = max(dx, dy) + 100;
+
+    // A -> B -> C -> A (ccw)
+    vertex A(vs.size() + 1, cx, ymax + pad),
+		B(vs.size() + 2, xmin - pad, ymin - pad),
+        C(vs.size() + 3, xmax + pad, ymin - pad);
+
+    edgeref AB = edgeref::make_edge();
+    AB.org() = A;
+    AB.dest() = B;
+
+    edgeref BC = edgeref::make_edge();
+    BC.org() = B;
+    BC.dest() = C;
+
+    edgeref CA = edgeref::make_edge();
+    CA.org() = C;
+    CA.dest() = A;
+
+	edgeref::splice(AB, CA.sym());
+	edgeref::splice(BC, AB.sym());
+	edgeref::splice(CA, BC.sym());
+
+	vs.insert(vs.end(), {A, B, C});
+	return triangulation{vs, AB};
+}
+
+edgeref locate(vertex v, edgeref tr) {
+    edgeref e = tr;
+
+    do {
+        if (v == e.org() || v == e.dest())
+            return e;
+
+        if (edgeref::rightof(e, v))
+            e = e.sym();
+        else if (!edgeref::rightof(e.onext(), v))
+            e = e.onext();
+        else if (!edgeref::rightof(e.dprev(), v))
+            e = e.dprev();
+        else
+            return e;
+    } while (1);
+}
+
+void insert(vertex v, edgeref tr) {
+    edgeref e = locate(v, tr);
+
+    if (v == e.org() || v == e.dest())
+        return;
+
+    edgeref t;
+    if (orient2d(&e.org().x, &e.dest().x, &v.x) == 0) {
+        // on edge e
+        t = e.oprev();
+        edgeref::delete_edge(e);
+        e = t;
+    }
+
+    // connect vertices
+    edgeref base = edgeref::make_edge();
+    vertex first = e.org();
+    base.org() = first;
+    base.dest() = v;
+    edgeref::splice(base, e);
+
+    do {
+        base = edgeref::connect(e, base.sym());
+        e = base.oprev();
+    } while (e.dest() != first);
+
+    e = base.oprev();
+
+    do {
+        t = e.oprev();
+        if (edgeref::rightof(e, t.dest()) &&
+            incircle(&e.org().x, &t.dest().x, &e.dest().x, &v.x)) {
+            edgeref::swap(e);
+            e = t;
+        } else if (e.org() == first) {
+            return;
+        } else {
+            e = e.onext().lprev();
+        }
+    } while (1);
+}
 
 int main(void) {
-	vector<vertex> vs = parse_nodes("/Users/pdt/workspace/classes/274/project/voronoi/ex/box.node");
+    vector<vertex> vs = parse_nodes(
+        "/Users/pdt/workspace/classes/274/project/voronoi/ex/box.node");
 
-	for (vertex v : vs) {
-		cout << v << endl;
-	}
+    for (vertex v : vs) {
+        cout << v << endl;
+    }
+
+	cout << "parsed nodes" << endl;
+
+	triangulation tr = super_triangle(vs);
+	cout << tr.e << endl;
+	write("/Users/pdt/workspace/classes/274/project/voronoi/out", tr);
 
     return 0;
 }
-

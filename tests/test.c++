@@ -5,14 +5,6 @@
 
 using namespace std;
 
-bool eq(edgeref a, edgeref b) {
-    return a.e == b.e && a.r == b.r;
-}
-
-bool eq(const vertex &a, const vertex &b) {
-    return a.id == b.id && a.x == b.x && a.y == b.y;
-}
-
 void test_edge_algebra() {
     vertex a(1, 0.0, 0.0);
     vertex b(2, 1.0, 0.0);
@@ -22,15 +14,15 @@ void test_edge_algebra() {
     e.dest() = b;
 
     // 2.3 check properties
-    assert(eq(e.rot().rot().rot().rot(), e));
-    assert(eq(e.rot().onext().rot().onext(), e));
-    assert(eq(e.rot().onext(), e.rotinv()));
-    assert(eq(e.rot().onext().rot(), e));
-    assert(eq(e.rot().rot(), e.sym()));
-    assert(eq(e.oprev(), e.rot().onext().rot()));
-    assert(eq(e.lnext(), e.rotinv().onext().rot()));
-    assert(eq(e.rnext(), e.rot().onext().rotinv()));
-    assert(eq(e.dnext(), e.sym().onext().sym()));
+    assert(e.rot().rot().rot().rot() == e);
+    assert(e.rot().onext().rot().onext() == e);
+    assert(e.rot().onext() == e.rotinv());
+    assert(e.rot().onext().rot() == e);
+    assert(e.rot().rot() == e.sym());
+    assert(e.oprev() == e.rot().onext().rot());
+    assert(e.lnext() == e.rotinv().onext().rot());
+    assert(e.rnext() == e.rot().onext().rotinv());
+    assert(e.dnext() == e.sym().onext().sym());
 }
 
 void test_operators() {
@@ -54,22 +46,22 @@ void test_operators() {
 	edgeref::splice(e3.sym(), e4);
 	edgeref::splice(e4.sym(), e1);
 
-	assert(eq(e1.lnext(), e2));
-	assert(eq(e1.lnext().lnext(), e3));
-	assert(eq(e1.lnext().lnext().lnext(), e4));
+	assert(e1.lnext() == e2);
+	assert(e1.lnext().lnext() == e3);
+	assert(e1.lnext().lnext().lnext() == e4);
 
-	assert(eq(e1.rnext(), e4));
-	assert(eq(e2.rnext(), e1));
-	assert(eq(e3.rnext(), e2));
-	assert(eq(e4.rnext(), e3));
+	assert(e1.rnext() == e4);
+	assert(e2.rnext() == e1);
+	assert(e3.rnext() == e2);
+	assert(e4.rnext() == e3);
 
 	edgeref e = edgeref::connect(e4, e3);
 
-	assert(eq(e.org(), v1));
-	assert(eq(e.dest(), v3));
+	assert(e.org() == v1);
+	assert(e.dest() == v3);
 
-	assert(eq(e.lnext(), e3));
-	assert(eq(e4.lnext(), e));
+	assert(e.lnext() == e3);
+	assert(e4.lnext() == e);
 }
 
 int main() {

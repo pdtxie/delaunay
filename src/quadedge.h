@@ -3,6 +3,15 @@
 struct vertex {
 	int id;
 	double x, y;
+
+	// TODO: this might be bad
+	bool operator==(const vertex& other) const {
+		return id == other.id && x == other.x && y == other.y;
+	}
+
+	bool operator!=(const vertex& other) const {
+		return !(*this == other);
+	}
 };
 
 struct quadedge;
@@ -19,20 +28,36 @@ struct edgeref {
     edgeref rotinv();
 	edgeref sym();
 
+    edgeref &onext();
+    edgeref oprev();
+
 	edgeref lnext();
+	edgeref lprev();
+
 	edgeref rnext();
+	edgeref rprev();
+
+	edgeref dprev();
 	edgeref dnext();
 
     vertex &org();
     vertex &dest();
 
-    edgeref &onext();
-    edgeref oprev();
-
     static void splice(edgeref a, edgeref b);
     static edgeref connect(edgeref a, edgeref b);
 	static void delete_edge(edgeref e);
 	static void swap(edgeref e);
+
+	static bool rightof(edgeref e, vertex v);  // v right of e
+	static bool leftof(edgeref e, vertex v);  // v right of e
+
+	bool operator==(const edgeref& other) const {
+		return e == other.e && r == other.r;
+	}
+
+	bool operator!=(const edgeref& other) const {
+		return !(*this == other);
+	}
 };
 
 struct edgerecord {
@@ -42,6 +67,11 @@ struct edgerecord {
 
 struct quadedge {
     edgerecord es[4];
+};
+
+struct triangulation {
+	std::vector<vertex> vs;
+	edgeref e;
 };
 
 // debugging

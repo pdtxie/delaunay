@@ -1,9 +1,12 @@
 #include "quadedge.h"
+extern "C" {
+#include "predicates.h"
+}
 #include <iostream>
 #include <string>
 
-using std::string;
 using std::ostream;
+using std::string;
 
 vertex &edgeref::org() {
     return this->e->es[this->r].data;
@@ -37,6 +40,18 @@ edgeref edgeref::oprev() {
 // convenience lnext/rnext/dnext
 edgeref edgeref::lnext() {
     return this->rotinv().onext().rot();
+}
+
+edgeref edgeref::lprev() {
+	return this->onext().sym();
+}
+
+edgeref edgeref::rprev() {
+	return this->sym().onext();
+}
+
+edgeref edgeref::dprev() {
+	return this->rotinv().onext().rotinv();
 }
 
 edgeref edgeref::rnext() {
@@ -86,12 +101,12 @@ void edgeref::swap(edgeref e) {
 edgeref edgeref::make_edge() {
     quadedge *q = new quadedge;
 
-	// 0 = e, 2 = e.sym()
-	// 1 = e.rot(), 3 = e.rotinv()
-	q->es[0].next = edgeref(q, 0);
-	q->es[1].next = edgeref(q, 3);
-	q->es[2].next = edgeref(q, 2);
-	q->es[3].next = edgeref(q, 1);
+    // 0 = e, 2 = e.sym()
+    // 1 = e.rot(), 3 = e.rotinv()
+    q->es[0].next = edgeref(q, 0);
+    q->es[1].next = edgeref(q, 3);
+    q->es[2].next = edgeref(q, 2);
+    q->es[3].next = edgeref(q, 1);
 
     return edgeref(q, 0);
 }
@@ -102,6 +117,16 @@ void edgeref::delete_edge(edgeref e) {
     delete e.e;
 }
 
+// geometric primitives
+bool edgeref::rightof(edgeref e, vertex v) {
+    // v right of e
+    return orient2d(&v.x, &e.dest().x, &e.org().x) > 0;
+}
+
+bool edgeref::leftof(edgeref e, vertex v) {
+    // v left of e
+    return orient2d(&v.x, &e.org().x, &e.dest().x) > 0;
+}
 
 // debugging
 ostream &operator<<(std::ostream &os, const vertex &v) {
