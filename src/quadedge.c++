@@ -1,7 +1,8 @@
-#include "quadedge.h"
 extern "C" {
 #include "predicates.h"
 }
+#include "quadedge.h"
+
 #include <iostream>
 #include <string>
 

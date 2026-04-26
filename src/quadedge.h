@@ -70,8 +70,9 @@ struct quadedge {
 };
 
 struct triangulation {
-	std::vector<vertex> vs;
 	edgeref e;
+	std::vector<vertex> vs;
+	std::vector<edgeref> es;
 };
 
 // debugging

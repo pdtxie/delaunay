@@ -113,8 +113,8 @@ triangulation super_triangle(vector<vertex> vs) {
 	return triangulation{vs, AB};
 }
 
-edgeref locate(vertex v, edgeref tr) {
-    edgeref e = tr;
+edgeref locate(vertex v, triangulation& tr) {
+    edgeref e = tr.e;
 
     do {
         if (v == e.org() || v == e.dest())
@@ -131,7 +131,7 @@ edgeref locate(vertex v, edgeref tr) {
     } while (1);
 }
 
-void insert(vertex v, edgeref tr) {
+void insert(vertex v, triangulation& tr) {
     edgeref e = locate(v, tr);
 
     if (v == e.org() || v == e.dest())
@@ -177,13 +177,16 @@ int main(void) {
     vector<vertex> vs = parse_nodes(
         "/Users/pdt/workspace/classes/274/project/voronoi/ex/box.node");
 
-    for (vertex v : vs) {
-        cout << v << endl;
-    }
-
 	cout << "parsed nodes" << endl;
 
 	triangulation tr = super_triangle(vs);
+
+	cout << "made super triangle" << endl;
+
+    for (vertex v : vs) {
+		insert(v, tr);
+    }
+
 	cout << tr.e << endl;
 	write("/Users/pdt/workspace/classes/274/project/voronoi/out", tr);
 
