@@ -1,5 +1,9 @@
 #include "quadedge.h"
 #include <iostream>
+#include <string>
+
+using std::string;
+using std::ostream;
 
 vertex &edgeref::org() {
     return this->e->es[this->r].data;
@@ -100,19 +104,19 @@ void edgeref::delete_edge(edgeref e) {
 
 
 // debugging
-std::ostream &operator<<(std::ostream &os, const vertex &v) {
+ostream &operator<<(std::ostream &os, const vertex &v) {
     return os << "vertex(id=" << v.id << ", x=" << v.x << ", y=" << v.y << ")";
 }
 
-std::ostream &operator<<(std::ostream &os, const edgeref &ref) {
+ostream &operator<<(std::ostream &os, const edgeref &ref) {
     return os << "edgeref(e=" << ref.e << ", r=" << ref.r << ")";
 }
 
-std::ostream &operator<<(std::ostream &os, const edgerecord &rec) {
+ostream &operator<<(std::ostream &os, const edgerecord &rec) {
     return os << "edgerecord(data=" << rec.data << ", next=" << rec.next;
 }
 
-std::ostream &operator<<(std::ostream &os, const quadedge &q) {
+ostream &operator<<(std::ostream &os, const quadedge &q) {
     for (int i = 0; i < 4; i++)
         os << "[" << i << "] " << q.es[i] << " / ";
 
