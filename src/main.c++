@@ -1,4 +1,5 @@
 #include <format>
+#include <set>
 extern "C" {
 #define TRILIBRARY
 #define REAL double
@@ -45,22 +46,47 @@ vector<vertex> parse_nodes(string path) {
     return v;
 }
 
-// TODO: hardcoded to super triangle rn
-void write(string path, triangulation tr) {
+void write(string path, triangulation& tr) {
 	ofstream ele(path + "/out.ele");
 
-	ele << "1 3 0" << endl;
-	ele << "1 ";
-	edgeref t = tr.e;
-	do {
-		ele << t.org().id << " ";
-		t = t.lnext();
-	} while (t != tr.e);
+	vector<array<int, 3>> triangles;
+	set<array<int, 3>> seen;
+
+	auto _create_face = [&](edgeref e) {
+		edgeref a = e;
+		edgeref b = a.lnext();
+		edgeref c = b.lnext();
+
+		if (c.lnext() != a || orient2d(&a.org().x, &b.org().x, &c.org().x) <= 0)
+			return; // not triangle OR outside face
+
+		array<int, 3> t = {a.org().id, b.org().id, c.org().id};
+		sort(t.begin(), t.end());
+		if (seen.contains(t))
+			return;
+
+		triangles.push_back(t);
+		seen.insert(t);
+	};
+
+
+	for (edgeref e : tr.es) {
+		_create_face(e);
+		_create_face(e.sym());
+	}
+
+	ele << format("{} 3 0", triangles.size()) << endl;
+
+	for (int i = 0; i < triangles.size(); i++) {
+		auto t = triangles[i];
+		ele << format("{} {} {} {}", i + 1, t[0], t[1], t[2]) << endl;
+	}
+
 
 
 	ofstream node(path + "/out.node");
 	
-	node << "15 2 0 0" << endl;
+	node << format("{} 2 0 0", tr.vs.size()) << endl;
 
 	for (vertex v : tr.vs) {
 		node << format("{} {} {}", v.id, v.x, v.y) << endl;
@@ -110,7 +136,7 @@ triangulation super_triangle(vector<vertex> vs) {
 	edgeref::splice(CA, BC.sym());
 
 	vs.insert(vs.end(), {A, B, C});
-	return triangulation{vs, AB};
+	return triangulation{AB, vs, {AB, BC, CA}};
 }
 
 edgeref locate(vertex v, triangulation& tr) {
@@ -147,6 +173,7 @@ void insert(vertex v, triangulation& tr) {
 
     // connect vertices
     edgeref base = edgeref::make_edge();
+	tr.es.push_back(base);
     vertex first = e.org();
     base.org() = first;
     base.dest() = v;
@@ -154,6 +181,7 @@ void insert(vertex v, triangulation& tr) {
 
     do {
         base = edgeref::connect(e, base.sym());
+		tr.es.push_back(base);
         e = base.oprev();
     } while (e.dest() != first);
 
@@ -183,9 +211,9 @@ int main(void) {
 
 	cout << "made super triangle" << endl;
 
-    for (vertex v : vs) {
-		insert(v, tr);
-    }
+  //   for (vertex v : vs) {
+		// insert(v, tr);
+  //   }
 
 	cout << tr.e << endl;
 	write("/Users/pdt/workspace/classes/274/project/voronoi/out", tr);
