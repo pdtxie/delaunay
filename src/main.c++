@@ -58,10 +58,12 @@ void write(string path, triangulation &tr) {
         if (c.lnext() != a || orient2d(&a.org().x, &b.org().x, &c.org().x) <= 0)
             return;  // not triangle OR outside face
 
-		// ignore super triangle
-		auto _ignore_super = [&](edgeref e) { return e.org().id > tr.vs.size() - 3; };
-		if (_ignore_super(a) || _ignore_super(b) || _ignore_super(c))
-			return;
+        // ignore super triangle
+        auto _ignore_super = [&](edgeref e) {
+            return e.org().id > tr.vs.size() - 3;
+        };
+        if (_ignore_super(a) || _ignore_super(b) || _ignore_super(c))
+            return;
 
         array<int, 3> t = {a.org().id, b.org().id, c.org().id};
         sort(t.begin(), t.end());
@@ -166,8 +168,8 @@ void insert(vertex v, triangulation &tr) {
     edgeref t;
     if (orient2d(&e.org().x, &e.dest().x, &v.x) == 0) {
         // on edge e
-		t = e.oprev();
-		erase_if(tr.es, [&](edgeref x){ return x == e || x == e.sym(); });
+        t = e.oprev();
+        erase_if(tr.es, [&](edgeref x) { return x == e || x == e.sym(); });
         edgeref::delete_edge(e);
         e = t;
     }
@@ -191,9 +193,9 @@ void insert(vertex v, triangulation &tr) {
     do {
         t = e.oprev();
 
-		REAL o = orient2d(&e.org().x, &t.dest().x, &e.dest().x);
-		REAL det = incircle(&e.org().x, &t.dest().x, &e.dest().x, &v.x);
-		bool inside = (o > 0 && det > 0) || (o < 0 && det < 0);
+        REAL o = orient2d(&e.org().x, &t.dest().x, &e.dest().x);
+        REAL det = incircle(&e.org().x, &t.dest().x, &e.dest().x, &v.x);
+        bool inside = (o > 0 && det > 0) || (o < 0 && det < 0);
 
         if (edgeref::rightof(e, t.dest()) && inside) {
             edgeref::swap(e);
@@ -229,4 +231,3 @@ int main(void) {
 
     return 0;
 }
-
