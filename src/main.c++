@@ -163,6 +163,7 @@ void insert(vertex v, triangulation &tr) {
     if (orient2d(&e.org().x, &e.dest().x, &v.x) == 0) {
         // on edge e
         t = e.oprev();
+		erase_if(tr.es, [&](edgeref x){ return x == e || x == e.sym(); });
         edgeref::delete_edge(e);
         e = t;
     }
@@ -186,7 +187,7 @@ void insert(vertex v, triangulation &tr) {
     do {
         t = e.oprev();
         if (edgeref::rightof(e, t.dest()) &&
-            incircle(&e.org().x, &t.dest().x, &e.dest().x, &v.x)) {
+            incircle(&e.org().x, &t.dest().x, &e.dest().x, &v.x) > 0) {
             edgeref::swap(e);
             e = t;
         } else if (e.org() == first) {
