@@ -44,15 +44,15 @@ edgeref edgeref::lnext() {
 }
 
 edgeref edgeref::lprev() {
-	return this->onext().sym();
+    return this->onext().sym();
 }
 
 edgeref edgeref::rprev() {
-	return this->sym().onext();
+    return this->sym().onext();
 }
 
 edgeref edgeref::dprev() {
-	return this->rotinv().onext().rotinv();
+    return this->rotinv().onext().rotinv();
 }
 
 edgeref edgeref::rnext() {
