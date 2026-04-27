@@ -58,6 +58,11 @@ void write(string path, triangulation &tr) {
         if (c.lnext() != a || orient2d(&a.org().x, &b.org().x, &c.org().x) <= 0)
             return;  // not triangle OR outside face
 
+		// ignore super triangle
+		auto _ignore_super = [&](edgeref e) { return e.org().id > tr.vs.size() - 3; };
+		if (_ignore_super(a) || _ignore_super(b) || _ignore_super(c))
+			return;
+
         array<int, 3> t = {a.org().id, b.org().id, c.org().id};
         sort(t.begin(), t.end());
         if (seen.contains(t))
@@ -161,10 +166,9 @@ void insert(vertex v, triangulation &tr) {
     edgeref t;
     if (orient2d(&e.org().x, &e.dest().x, &v.x) == 0) {
         // on edge e
-        t = e.oprev();
 		erase_if(tr.es, [&](edgeref x){ return x == e || x == e.sym(); });
         edgeref::delete_edge(e);
-        e = t;
+        e = e.oprev();
     }
 
     // connect vertices
@@ -192,7 +196,7 @@ void insert(vertex v, triangulation &tr) {
 
         if (edgeref::rightof(e, t.dest()) && inside) {
             edgeref::swap(e);
-            e = t;
+            e = e.oprev();
         } else if (e.org() == first) {
             return;
         } else {
