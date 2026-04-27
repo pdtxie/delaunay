@@ -1,4 +1,6 @@
+.cache
 build/
 out/
-.cache
 ex/
+ex/*
+out/*

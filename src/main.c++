@@ -166,9 +166,10 @@ void insert(vertex v, triangulation &tr) {
     edgeref t;
     if (orient2d(&e.org().x, &e.dest().x, &v.x) == 0) {
         // on edge e
+		t = e.oprev();
 		erase_if(tr.es, [&](edgeref x){ return x == e || x == e.sym(); });
         edgeref::delete_edge(e);
-        e = e.oprev();
+        e = t;
     }
 
     // connect vertices
@@ -209,7 +210,7 @@ int main(void) {
     exactinit();
 
     vector<vertex> vs = parse_nodes(
-        "/Users/pdt/workspace/classes/274/project/voronoi/ex/spiral.node");
+        "/Users/pdt/workspace/classes/274/project/voronoi/ex/633.node");
 
     cout << "parsed nodes" << endl;
 
