@@ -2,7 +2,6 @@ extern "C" {
 #define TRILIBRARY
 #define REAL double
 #include "predicates.h"
-#include "triangle.h"
 }
 
 #include <cassert>
@@ -186,8 +185,12 @@ void insert(vertex v, triangulation &tr) {
 
     do {
         t = e.oprev();
-        if (edgeref::rightof(e, t.dest()) &&
-            incircle(&e.org().x, &t.dest().x, &e.dest().x, &v.x) > 0) {
+
+		REAL o = orient2d(&e.org().x, &t.dest().x, &e.dest().x);
+		REAL det = incircle(&e.org().x, &t.dest().x, &e.dest().x, &v.x);
+		bool inside = (o > 0 && det > 0) || (o < 0 && det < 0);
+
+        if (edgeref::rightof(e, t.dest()) && inside) {
             edgeref::swap(e);
             e = t;
         } else if (e.org() == first) {
@@ -202,7 +205,7 @@ int main(void) {
     exactinit();
 
     vector<vertex> vs = parse_nodes(
-        "/Users/pdt/workspace/classes/274/project/voronoi/ex/box.node");
+        "/Users/pdt/workspace/classes/274/project/voronoi/ex/spiral.node");
 
     cout << "parsed nodes" << endl;
 
@@ -221,3 +224,4 @@ int main(void) {
 
     return 0;
 }
+

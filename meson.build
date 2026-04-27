@@ -4,28 +4,28 @@ project(
   default_options: ['cpp_std=c++20']
 )
 
-triangle_inc = include_directories('triangle')
+# triangle_inc = include_directories('triangle')
 
-triangle_lib = static_library(
-  'triangle',
-  'triangle/triangle.c',
-  include_directories : triangle_inc,
-  install : false,
-)
+# triangle_lib = static_library(
+#   'triangle',
+#   'triangle/triangle.c',
+#   include_directories : triangle_inc,
+#   install : false,
+# )
 
 voronoi_exe = executable(
   'voronoi',
   ['src/main.c++', 'src/quadedge.c++', 'src/predicates.c'],
-  include_directories : triangle_inc,
-  link_with : triangle_lib,
+  # include_directories : triangle_inc,
+  # link_with : triangle_lib,
   install : false,
 )
 
 test_exe = executable(
   'topology_tests',
   ['tests/test.c++', 'src/quadedge.c++', 'src/predicates.c'],
-  include_directories : triangle_inc,
-  link_with : triangle_lib,
+  # include_directories : triangle_inc,
+  # link_with : triangle_lib,
   install : false,
 )
 
@@ -35,5 +35,11 @@ showme_exe = executable(
   'showme',
   'triangle/showme.c',
   dependencies : x11_dep,
+  install : false,
+)
+
+triangle_exe = executable(
+  'triangle',
+  'triangle/triangle.c',
   install : false,
 )
