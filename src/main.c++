@@ -209,6 +209,15 @@ void insert(vertex &v, triangulation &tr, bool fast) {
 
     edgeref t;
     if (orient2d(&e.org().x, &e.dest().x, &v.x) == 0) {
+		if (fast) {
+			trianglerecord *rt = e.rrec();
+
+			if (rt && rt->alive) {
+				old_conflicts.insert(old_conflicts.end(), rt->conflicts.begin(), rt->conflicts.end());
+				rt->alive = false;
+			}
+		}
+
         // on edge e
         t = e.oprev();
         erase_if(tr.es, [&](edgeref x) { return x == e || x == e.sym(); });
