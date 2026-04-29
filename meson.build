@@ -1,5 +1,5 @@
 project(
-  'voronoi',
+  'delaunay',
   ['c', 'cpp'],
   default_options: ['cpp_std=c++20']
 )
@@ -15,8 +15,8 @@ project(
 
 argparse_dep = dependency('argparse')
 
-voronoi_exe = executable(
-  'voronoi',
+delaunay_exe = executable(
+  'delaunay',
   ['src/main.c++', 'src/quadedge.c++', 'src/predicates.c'],
   dependencies: argparse_dep,
   # include_directories : triangle_inc,

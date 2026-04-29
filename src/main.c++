@@ -4,6 +4,8 @@ extern "C" {
 #include "predicates.h"
 }
 
+#include <algorithm>
+#include <random>
 #include <cassert>
 #include <chrono>
 #include <filesystem>
@@ -173,50 +175,50 @@ edgeref locate_fast(vertex v, triangulation &tr) {
     return edgeref(v.loce, v.locr);
 }
 
-
 void init_conflicts(triangulation &tr, int n) {
-	// tr must be super triangle at this point TODO: add assert??
-	trianglerecord *t = new trianglerecord;
-	t->rep = tr.e;
+    // tr must be super triangle at this point TODO: add assert??
+    trianglerecord *t = new trianglerecord;
+    t->rep = tr.e;
 
-	tr.e.assign_lrec(t);
+    tr.e.assign_lrec(t);
 
-	for (int i = 0; i < n; i++) {
-		vertex &v = tr.vs[i];
+    for (int i = 0; i < n; i++) {
+        vertex &v = tr.vs[i];
 
-		v.loce = tr.e.e;
-		v.locr = tr.e.r;
+        v.loce = tr.e.e;
+        v.locr = tr.e.r;
 
-		t->conflicts.push_back(&v);
-	}
+        t->conflicts.push_back(&v);
+    }
 }
 
 void insert(vertex &v, triangulation &tr, bool fast) {
     edgeref e = fast ? locate_fast(v, tr) : locate_slow(v, tr);
 
-	vector<vertex *> old_conflicts;
+    vector<vertex *> old_conflicts;
 
-	if (fast) {
-		trianglerecord *old_t = e.lrec();
-		old_conflicts = old_t->conflicts;
-		old_t->alive = false;
-		v.loce = nullptr;
-		v.locr = 0;
-	}
+    if (fast) {
+        trianglerecord *old_t = e.lrec();
+        old_conflicts = old_t->conflicts;
+        old_t->alive = false;
+        v.loce = nullptr;
+        v.locr = 0;
+    }
 
     if (v == e.org() || v == e.dest())
         return;
 
     edgeref t;
     if (orient2d(&e.org().x, &e.dest().x, &v.x) == 0) {
-		if (fast) {
-			trianglerecord *rt = e.rrec();
+        if (fast) {
+            trianglerecord *rt = e.rrec();
 
-			if (rt && rt->alive) {
-				old_conflicts.insert(old_conflicts.end(), rt->conflicts.begin(), rt->conflicts.end());
-				rt->alive = false;
-			}
-		}
+            if (rt && rt->alive) {
+                old_conflicts.insert(old_conflicts.end(), rt->conflicts.begin(),
+                                     rt->conflicts.end());
+                rt->alive = false;
+            }
+        }
 
         // on edge e
         t = e.oprev();
@@ -239,23 +241,21 @@ void insert(vertex &v, triangulation &tr, bool fast) {
         e = base.oprev();
     } while (e.dest() != first);
 
-	// create trianglerecords
-	if (fast) {
-		vector<trianglerecord *> new_ts;
-		edgeref start = base.sym(), cur = start;
+    // create trianglerecords
+    if (fast) {
+        vector<trianglerecord *> new_ts;
+        edgeref start = base.sym(), cur = start;
 
-		do {
-			trianglerecord *nt = new trianglerecord;
-			cur.assign_lrec(nt);
-			new_ts.push_back(nt);
+        do {
+            trianglerecord *nt = new trianglerecord;
+            cur.assign_lrec(nt);
+            new_ts.push_back(nt);
 
-			cur = cur.onext();
-		} while (cur != start);
+            cur = cur.onext();
+        } while (cur != start);
 
-		edgeref::fix_conflicts(old_conflicts, new_ts);
-	}
-
-
+        edgeref::fix_conflicts(old_conflicts, new_ts);
+    }
 
     e = base.oprev();
 
@@ -280,7 +280,7 @@ void insert(vertex &v, triangulation &tr, bool fast) {
 int main(int argc, char **argv) {
     exactinit();
 
-    argparse::ArgumentParser program("voronoi");
+    argparse::ArgumentParser program("delaunay");
     program.add_argument("-f").required().help(".node file to triangulate");
     program.add_argument("-d").flag().help("debug mode");
     program.add_argument("-p").flag().help("performance test / record time");
@@ -309,45 +309,52 @@ int main(int argc, char **argv) {
 
     path path = filesystem::current_path() /= file;
 
+
+    cout << "parsing nodes, shuffling + making super triangle..." << endl;
+
     /*[0]*/ chrono::steady_clock::time_point t0 = chrono::steady_clock::now();
-
-    cout << "parsing nodes + making super triangle..." << endl;
-
     vector<vertex> vs = parse_nodes(path);
-	int n = vs.size();
-    triangulation tr = super_triangle(vs);
-	if (fast) init_conflicts(tr, n);
+	cout << "shuffling vertices..." << endl;
+	random_device rd;
+	mt19937 gen(rd());
+	shuffle(vs.begin(), vs.end(), gen);
 
+    int n = vs.size();
+    triangulation tr = super_triangle(vs);
+    if (fast)
+        init_conflicts(tr, n);
     /*[1]*/ chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
+
     if (perf)
-        cout << format("[perf] parsed + made super triangle in {}ms",
-                       duration_cast<milliseconds>(t1 - t0).count())
-             << endl;
+		cout << format("[perf] parsed + made super triangle in {}ms", duration_cast<milliseconds>(t1 - t0).count()) << endl;
 
     cout << "inserting vertices..." << endl;
+
+    /*[2]*/ chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
     for (int i = 0; i < n; i++) {
         insert(tr.vs[i], tr, fast);
         if (DEBUG)
             cout << "[debug] inserted: " << tr.vs[i] << endl;
     }
+    /*[3]*/ chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
 
-    /*[2]*/ chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
 
     if (perf)
         cout << format("[perf] inserted in {}ms",
-                       duration_cast<milliseconds>(t2 - t1).count())
+                       duration_cast<milliseconds>(t3 - t2).count())
              << endl;
 
     cout << "writing output..." << endl;
 
-    write("/Users/pdt/workspace/classes/274/project/voronoi/out", tr);
+    /*[4]*/ chrono::steady_clock::time_point t4 = chrono::steady_clock::now();
+    write("/Users/pdt/workspace/classes/274/project/delaunay/out", tr);
+    /*[5]*/ chrono::steady_clock::time_point t5 = chrono::steady_clock::now();
 
-    /*[3]*/ chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
 
     if (perf)
         cout << format("[perf] wrote output in {}ms",
-                       duration_cast<milliseconds>(t3 - t2).count())
+                       duration_cast<milliseconds>(t5 - t4).count())
              << endl;
 
     return 0;
