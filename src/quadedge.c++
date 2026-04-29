@@ -1,3 +1,4 @@
+#include <format>
 extern "C" {
 #include "predicates.h"
 }
@@ -148,3 +149,4 @@ ostream &operator<<(std::ostream &os, const quadedge &q) {
 
     return os;
 }
+

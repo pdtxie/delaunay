@@ -4,6 +4,7 @@ extern "C" {
 #include "predicates.h"
 }
 
+#include <filesystem>
 #include <cassert>
 #include <format>
 #include <fstream>
@@ -16,7 +17,10 @@ extern "C" {
 
 #include "quadedge.h"
 
+bool DEBUG = 1;
+
 using namespace std;
+using filesystem::path;
 
 // parse input .node
 vector<vertex> parse_nodes(string path) {
@@ -24,7 +28,8 @@ vector<vertex> parse_nodes(string path) {
     int n, dim, nattr, bs;
     infile >> n >> dim >> nattr >> bs;
 
-    printf("parsing... n=%d, dim=%d, nattr=%d, bs=%d\n", n, dim, nattr, bs);
+	if (DEBUG)
+		printf("[debug] parsing... n=%d, dim=%d, nattr=%d, bs=%d\n", n, dim, nattr, bs);
 
     vector<vertex> v;
 
@@ -213,25 +218,45 @@ void insert(vertex v, triangulation &tr) {
 int main(int argc, char** argv) {
     exactinit();
 
-	if (argc != 3) {
-		cout << "incorrect number of arguments" << endl;
+	argparse::ArgumentParser program("voronoi");
+	program.add_argument("-f").required().help(".node file to triangulate");
+	program.add_argument("--fast").flag().help("use fast point location. uses slow point location by default");
+	program.add_argument("-d").flag().help("debug / verbose mode");
+
+	try {
+		program.parse_args(argc, argv);
+	} catch (const std::exception& err) {
+		std::cerr << err.what() << std::endl;
+		std::cerr << program;
+		std::exit(1);
 	}
 
-    vector<vertex> vs = parse_nodes(
-        "/Users/pdt/workspace/classes/274/project/voronoi/ex/633.node");
+	string file = program.get<string>("-f");
+	bool fast = program.get<bool>("--fast");
 
-    cout << "parsed nodes" << endl;
+	cout << format("running on file: {}.node with {} mode", file, fast ? "fast" : "slow") << endl;
+	if (program.get<bool>("-d")) {
+		cout << "[debug] using debug mode" << endl;
+		DEBUG = 1;
+	}
+
+	path path = filesystem::current_path() /= "ex";
+
+    vector<vertex> vs = parse_nodes(path /= format("{}.node", file));
+
+    cout << "[success] parsed nodes" << endl;
 
     triangulation tr = super_triangle(vs);
 
-    cout << "made super triangle" << endl;
+    cout << "[success] made super triangle" << endl;
 
     for (vertex v : vs) {
         insert(v, tr);
-        cout << "inserted: " << v << endl;
+		if (DEBUG)
+			cout << "[debug] inserted: " << v << endl;
     }
 
-    cout << "writing output..." << endl;
+    cout << "[success] writing output..." << endl;
 
     write("/Users/pdt/workspace/classes/274/project/voronoi/out", tr);
 
