@@ -64,39 +64,37 @@ edgeref edgeref::dnext() {
 }
 
 trianglerecord *&edgeref::lrec() {
-	return this->e->es[this->r].face;
+    return this->e->es[this->r].face;
 }
 
 trianglerecord *&edgeref::rrec() {
-	return this->sym().lrec();
+    return this->sym().lrec();
 }
 
 void edgeref::assign_lrec(trianglerecord *t) {
-	t->rep = *this;
+    t->rep = *this;
 
-	edgeref a = *this;
-	edgeref b = a.lnext();
-	edgeref c = b.lnext();
+    edgeref a = *this;
+    edgeref b = a.lnext();
+    edgeref c = b.lnext();
 
-	a.lrec() = b.lrec() = c.lrec() = t;
+    a.lrec() = b.lrec() = c.lrec() = t;
 }
 
 bool edgeref::in_lrec(vertex &v) {
-	edgeref a = *this;
-	edgeref b = a.lnext();
-	edgeref c = b.lnext();
+    edgeref a = *this;
+    edgeref b = a.lnext();
+    edgeref c = b.lnext();
 
-	// TODO: double check...
-	return !edgeref::rightof(a, v) && !edgeref::rightof(b, v) && !edgeref::rightof(c, v);
+    // TODO: double check...
+    return !edgeref::rightof(a, v) && !edgeref::rightof(b, v) && !edgeref::rightof(c, v);
 }
-
 
 // topology methods
 void edgeref::splice(edgeref a, edgeref b) {
     edgeref alpha = a.onext().rot(), beta = b.onext().rot();
 
-    edgeref ta = a.onext(), tb = b.onext(), talpha = alpha.onext(),
-            tbeta = beta.onext();
+    edgeref ta = a.onext(), tb = b.onext(), talpha = alpha.onext(), tbeta = beta.onext();
 
     a.onext() = tb;
     b.onext() = ta;
@@ -124,7 +122,7 @@ void edgeref::fix_conflicts(std::vector<vertex *> &o, std::vector<trianglerecord
                 // if in triangle
                 t->conflicts.push_back(v);
                 v->loce = t->rep.e;
-				v->locr = t->rep.r;
+                v->locr = t->rep.r;
                 break;
             }
         }
@@ -132,22 +130,22 @@ void edgeref::fix_conflicts(std::vector<vertex *> &o, std::vector<trianglerecord
 }
 
 void edgeref::swap(edgeref e, bool fast) {
-	std::vector<vertex *> old;
+    std::vector<vertex *> old;
 
-	if (fast) {
-		trianglerecord *a = e.lrec();
-		trianglerecord *b = e.rrec();
+    if (fast) {
+        trianglerecord *a = e.lrec();
+        trianglerecord *b = e.rrec();
 
-		if (a) {
-			old.insert(old.end(), a->conflicts.begin(), a->conflicts.end());
-			a->alive = false;
-		}
+        if (a) {
+            old.insert(old.end(), a->conflicts.begin(), a->conflicts.end());
+            a->alive = false;
+        }
 
-		if (b) {
-			old.insert(old.end(), b->conflicts.begin(), b->conflicts.end());
-			b->alive = false;
-		}
-	}
+        if (b) {
+            old.insert(old.end(), b->conflicts.begin(), b->conflicts.end());
+            b->alive = false;
+        }
+    }
 
     edgeref a = e.oprev();
     edgeref b = e.sym().oprev();
@@ -161,15 +159,15 @@ void edgeref::swap(edgeref e, bool fast) {
     e.org() = a.dest();
     e.dest() = b.dest();
 
-	if (fast) {
-		trianglerecord *c = new trianglerecord;
-		trianglerecord *d = new trianglerecord;
+    if (fast) {
+        trianglerecord *c = new trianglerecord;
+        trianglerecord *d = new trianglerecord;
 
-		e.assign_lrec(c);
-		e.sym().assign_lrec(d);
+        e.assign_lrec(c);
+        e.sym().assign_lrec(d);
 
-		edgeref::fix_conflicts(old, {c, d});
-	}
+        edgeref::fix_conflicts(old, {c, d});
+    }
 }
 
 edgeref edgeref::make_edge() {
@@ -221,4 +219,3 @@ ostream &operator<<(std::ostream &os, const quadedge &q) {
 
     return os;
 }
-

@@ -5,7 +5,6 @@ extern "C" {
 }
 
 #include <algorithm>
-#include <random>
 #include <cassert>
 #include <chrono>
 #include <filesystem>
@@ -13,6 +12,7 @@ extern "C" {
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <random>
 #include <set>
 #include <vector>
 
@@ -33,8 +33,7 @@ vector<vertex> parse_nodes(string path) {
     infile >> n >> dim >> nattr >> bs;
 
     if (DEBUG)
-        printf("[debug] parsing... n=%d, dim=%d, nattr=%d, bs=%d\n", n, dim,
-               nattr, bs);
+        printf("[debug] parsing... n=%d, dim=%d, nattr=%d, bs=%d\n", n, dim, nattr, bs);
 
     vector<vertex> v;
 
@@ -71,9 +70,7 @@ void write(string path, triangulation &tr) {
             return;  // not triangle OR outside face
 
         // ignore super triangle
-        auto _ignore_super = [&](edgeref e) {
-            return e.org().id > tr.vs.size() - 3;
-        };
+        auto _ignore_super = [&](edgeref e) { return e.org().id > tr.vs.size() - 3; };
         if (_ignore_super(a) || _ignore_super(b) || _ignore_super(c))
             return;
 
@@ -109,8 +106,7 @@ void write(string path, triangulation &tr) {
 
 triangulation super_triangle(vector<vertex> vs) {
     // make super triangle around all the points
-    double DMAX = numeric_limits<double>::max(),
-           DMIN = numeric_limits<double>::lowest();
+    double DMAX = numeric_limits<double>::max(), DMIN = numeric_limits<double>::lowest();
     REAL xmin = DMAX, xmax = DMIN, ymin = DMAX, ymax = DMIN;
 
     for (vertex v : vs) {
@@ -129,8 +125,7 @@ triangulation super_triangle(vector<vertex> vs) {
     REAL pad = max(dx, dy) * 10;
 
     // A -> B -> C -> A (ccw)
-    vertex A(vs.size() + 1, cx, ymax + pad),
-        B(vs.size() + 2, xmin - pad, ymin - pad),
+    vertex A(vs.size() + 1, cx, ymax + pad), B(vs.size() + 2, xmin - pad, ymin - pad),
         C(vs.size() + 3, xmax + pad, ymin - pad);
 
     edgeref AB = edgeref::make_edge();
@@ -286,8 +281,7 @@ int main(int argc, char **argv) {
     program.add_argument("-p").flag().help("performance test / record time");
     program.add_argument("--fast").flag().help(
         "use fast point location. uses slow point location by default");
-    program.add_argument("--random").flag().help(
-        "randomise input points");
+    program.add_argument("--random").flag().help("randomise input points");
 
     try {
         program.parse_args(argc, argv);
@@ -302,8 +296,8 @@ int main(int argc, char **argv) {
     bool fast = program.get<bool>("--fast");
     bool random = program.get<bool>("--random");
 
-    cout << format("running on file: {} with {} mode and {} points", file,
-                   fast ? "fast" : "slow", random ? "randomised" : "non-randomised")
+    cout << format("running on file: {} with {} mode and {} points", file, fast ? "fast" : "slow",
+                   random ? "randomised" : "non-randomised")
          << endl;
     if (program.get<bool>("-d")) {
         cout << "[debug] using debug mode" << endl;
@@ -312,17 +306,16 @@ int main(int argc, char **argv) {
 
     path path = filesystem::current_path() /= file;
 
-
     cout << "parsing nodes, shuffling + making super triangle..." << endl;
 
     /*[0]*/ chrono::steady_clock::time_point t0 = chrono::steady_clock::now();
     vector<vertex> vs = parse_nodes(path);
-	if (random) {
-		cout << "shuffling vertices..." << endl;
-		random_device rd;
-		mt19937 gen(rd());
-		shuffle(vs.begin(), vs.end(), gen);
-	}
+    if (random) {
+        cout << "shuffling vertices..." << endl;
+        random_device rd;
+        mt19937 gen(rd());
+        shuffle(vs.begin(), vs.end(), gen);
+    }
 
     int n = vs.size();
     triangulation tr = super_triangle(vs);
@@ -330,9 +323,10 @@ int main(int argc, char **argv) {
         init_conflicts(tr, n);
     /*[1]*/ chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
-
     if (perf)
-		cout << format("[perf] parsed + made super triangle in {}ms", duration_cast<milliseconds>(t1 - t0).count()) << endl;
+        cout << format("[perf] parsed + made super triangle in {}ms",
+                       duration_cast<milliseconds>(t1 - t0).count())
+             << endl;
 
     cout << "inserting vertices..." << endl;
 
@@ -344,24 +338,21 @@ int main(int argc, char **argv) {
     }
     /*[3]*/ chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
 
-
     if (perf)
-        cout << format("[perf] inserted in {}ms",
-                       duration_cast<milliseconds>(t3 - t2).count())
+        cout << format("[perf] inserted in {}ms", duration_cast<milliseconds>(t3 - t2).count())
              << endl;
 
     cout << "writing output..." << endl;
 
-	sort(tr.vs.begin(), tr.vs.end(), [](const vertex &v1, const vertex &v2){ return v1.id < v2.id; });
+    sort(tr.vs.begin(), tr.vs.end(),
+         [](const vertex &v1, const vertex &v2) { return v1.id < v2.id; });
 
     /*[4]*/ chrono::steady_clock::time_point t4 = chrono::steady_clock::now();
     write("/Users/pdt/workspace/classes/274/project/delaunay/out", tr);
     /*[5]*/ chrono::steady_clock::time_point t5 = chrono::steady_clock::now();
 
-
     if (perf)
-        cout << format("[perf] wrote output in {}ms",
-                       duration_cast<milliseconds>(t5 - t4).count())
+        cout << format("[perf] wrote output in {}ms", duration_cast<milliseconds>(t5 - t4).count())
              << endl;
 
     return 0;
