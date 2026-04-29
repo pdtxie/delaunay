@@ -4,15 +4,15 @@ extern "C" {
 #include "predicates.h"
 }
 
-#include <filesystem>
 #include <cassert>
+#include <chrono>
+#include <filesystem>
 #include <format>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <set>
 #include <vector>
-#include <chrono>
 
 #include <argparse/argparse.hpp>
 
@@ -24,15 +24,15 @@ using namespace std;
 using namespace std::chrono;
 using filesystem::path;
 
-
 // parse input .node
 vector<vertex> parse_nodes(string path) {
     ifstream infile(path);
     int n, dim, nattr, bs;
     infile >> n >> dim >> nattr >> bs;
 
-	if (DEBUG)
-		printf("[debug] parsing... n=%d, dim=%d, nattr=%d, bs=%d\n", n, dim, nattr, bs);
+    if (DEBUG)
+        printf("[debug] parsing... n=%d, dim=%d, nattr=%d, bs=%d\n", n, dim,
+               nattr, bs);
 
     vector<vertex> v;
 
@@ -169,12 +169,56 @@ edgeref locate_slow(vertex v, triangulation &tr) {
     } while (1);
 }
 
-edgeref locate_fast(vertex v, triangulation& tr) {
-	
+edgeref locate_fast(vertex v, triangulation &tr) {
+    return edgeref(v.loce, v.locr);
 }
 
-void insert(vertex v, triangulation &tr, bool fast) {
+void fix_condflicts(vector<vertex *> o, vector<trianglerecord *> &n) {
+    for (vertex *v : o) {
+        // for each old vertex, reassign
+        if (!v->loce)
+            continue;
+
+        for (trianglerecord *t : n) {
+            if (t->rep.in_lrec(*v)) {
+                // if in triangle
+                t->conflicts.push_back(v);
+                v->loce = t->rep.e;
+                break;
+            }
+        }
+    }
+}
+
+void init_conflicts(triangulation &tr, int n) {
+	// tr must be super triangle at this point TODO: add assert??
+	assert(tr.vs.size() == 3);
+
+	trianglerecord *t = new trianglerecord;
+	t->rep = tr.e;
+
+	tr.e.assign_lrec(t);
+
+	for (int i = 0; i < n; i++) {
+		vertex &v = tr.vs[i];
+
+		v.loce = tr.e.e;
+		v.locr = tr.e.r;
+
+		t->conflicts.push_back(&v);
+	}
+}
+
+void insert(vertex &v, triangulation &tr, bool fast) {
     edgeref e = fast ? locate_fast(v, tr) : locate_slow(v, tr);
+
+	trianglerecord *old_t = e.lrec();
+	vector<vertex *> old_conflicts;
+
+	if (fast && !old_t) {
+		old_conflicts = old_t->conflicts;
+		old_t->alive = false;
+	}
 
     if (v == e.org() || v == e.dest())
         return;
@@ -220,69 +264,84 @@ void insert(vertex v, triangulation &tr, bool fast) {
             e = e.onext().lprev();
         }
     } while (1);
+
+	if (fast) {
+		v.loce = nullptr;
+		v.locr = 0;
+	}
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     exactinit();
 
-	argparse::ArgumentParser program("voronoi");
-	program.add_argument("-f").required().help(".node file to triangulate");
-	program.add_argument("-d").flag().help("debug mode");
-	program.add_argument("-p").flag().help("performance test / record time");
-	program.add_argument("--fast").flag().help("use fast point location. uses slow point location by default");
+    argparse::ArgumentParser program("voronoi");
+    program.add_argument("-f").required().help(".node file to triangulate");
+    program.add_argument("-d").flag().help("debug mode");
+    program.add_argument("-p").flag().help("performance test / record time");
+    program.add_argument("--fast").flag().help(
+        "use fast point location. uses slow point location by default");
 
-	try {
-		program.parse_args(argc, argv);
-	} catch (const std::exception& err) {
-		std::cerr << err.what() << std::endl;
-		std::cerr << program;
-		std::exit(1);
-	}
-
-	string file = program.get<string>("-f");
-	bool fast = program.get<bool>("--fast");
-	bool perf = program.get<bool>("-p");
-
-
-
-	cout << format("running on file: {} with {} mode", file, fast ? "fast" : "slow") << endl;
-	if (program.get<bool>("-d")) {
-		cout << "[debug] using debug mode" << endl;
-		DEBUG = 1;
-	}
-
-	path path = filesystem::current_path() /= file;
-
-	chrono::steady_clock::time_point t0 = chrono::steady_clock::now();
-    cout << "parsing nodes + making super triangle..." << endl;
-    vector<vertex> vs = parse_nodes(path);
-
-    triangulation tr = super_triangle(vs);
-
-	chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-
-	if (perf)
-		cout << format("[perf] parsed + made super triangle in {}ms", duration_cast<milliseconds>(t1 - t0).count()) << endl;
-
-	cout << "inserting vertices..." << endl;
-    for (vertex v : vs) {
-        insert(v, tr);
-		if (DEBUG)
-			cout << "[debug] inserted: " << v << endl;
+    try {
+        program.parse_args(argc, argv);
+    } catch (const std::exception &err) {
+        std::cerr << err.what() << std::endl;
+        std::cerr << program;
+        std::exit(1);
     }
 
-	chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+    string file = program.get<string>("-f");
+    bool fast = program.get<bool>("--fast");
+    bool perf = program.get<bool>("-p");
 
-	if (perf)
-		cout << format("[perf] inserted in {}ms", duration_cast<milliseconds>(t2 - t1).count()) << endl;
+    cout << format("running on file: {} with {} mode", file,
+                   fast ? "fast" : "slow")
+         << endl;
+    if (program.get<bool>("-d")) {
+        cout << "[debug] using debug mode" << endl;
+        DEBUG = 1;
+    }
+
+    path path = filesystem::current_path() /= file;
+
+    /*[0]*/ chrono::steady_clock::time_point t0 = chrono::steady_clock::now();
+
+    cout << "parsing nodes + making super triangle..." << endl;
+
+    vector<vertex> vs = parse_nodes(path);
+    triangulation tr = super_triangle(vs);
+	init_conflicts(tr, vs.size());
+
+    /*[1]*/ chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+
+    if (perf)
+        cout << format("[perf] parsed + made super triangle in {}ms",
+                       duration_cast<milliseconds>(t1 - t0).count())
+             << endl;
+
+    cout << "inserting vertices..." << endl;
+    for (vertex v : vs) {
+        insert(v, tr, fast);
+        if (DEBUG)
+            cout << "[debug] inserted: " << v << endl;
+    }
+
+    /*[2]*/ chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+
+    if (perf)
+        cout << format("[perf] inserted in {}ms",
+                       duration_cast<milliseconds>(t2 - t1).count())
+             << endl;
 
     cout << "writing output..." << endl;
+
     write("/Users/pdt/workspace/classes/274/project/voronoi/out", tr);
 
-	chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
+    /*[3]*/ chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
 
-	if (perf)
-		cout << format("[perf] wrote output in {}ms", duration_cast<milliseconds>(t3 - t2).count()) << endl;
+    if (perf)
+        cout << format("[perf] wrote output in {}ms",
+                       duration_cast<milliseconds>(t3 - t2).count())
+             << endl;
 
     return 0;
 }

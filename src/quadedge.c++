@@ -1,4 +1,3 @@
-#include <format>
 extern "C" {
 #include "predicates.h"
 }
@@ -64,13 +63,33 @@ edgeref edgeref::dnext() {
     return this->sym().onext().sym();
 }
 
-trianglerecord *&edgeref::lrecord() {
+trianglerecord *&edgeref::lrec() {
 	return this->e->es[this->r].face;
 }
 
-trianglerecord *&rrecord(edgeref e) {
-
+trianglerecord *&edgeref::rrec() {
+	return this->sym().lrec();
 }
+
+void edgeref::assign_lrec(trianglerecord *t) {
+	t->rep = *this;
+
+	edgeref a = *this;
+	edgeref b = a.lnext();
+	edgeref c = b.lnext();
+
+	a.lrec() = b.lrec() = c.lrec() = t;
+}
+
+bool edgeref::in_lrec(vertex &v) {
+	edgeref a = *this;
+	edgeref b = a.lnext();
+	edgeref c = b.lnext();
+
+	// TODO: double check...
+	return !edgeref::rightof(a, v) && !edgeref::rightof(b, v) && !edgeref::rightof(c, v);
+}
+
 
 // topology methods
 void edgeref::splice(edgeref a, edgeref b) {

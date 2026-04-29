@@ -13,7 +13,7 @@ struct vertex {
 	// NOTE: for fast point location
 	// if null => inserted, none to point to
 	// otherwise, oriented edge of containing triangle
-	quadedge *locq = nullptr;
+	quadedge *loce = nullptr;
 	int locr = 0;
 
     // TODO: this might be bad
@@ -54,9 +54,6 @@ struct edgeref {
     vertex &org();
     vertex &dest();
 
-	trianglerecord *&lrecord();
-	trianglerecord *&rrecord();
-
     static void splice(edgeref a, edgeref b);
     static edgeref connect(edgeref a, edgeref b);
     static void delete_edge(edgeref e);
@@ -72,6 +69,14 @@ struct edgeref {
     bool operator!=(const edgeref &other) const {
         return !(*this == other);
     }
+
+
+	// NOTE: fast point loc
+	trianglerecord *&lrec();
+	trianglerecord *&rrec();
+
+	void assign_lrec(trianglerecord *t);
+	bool in_lrec(vertex &v);
 };
 
 // for fast point location
