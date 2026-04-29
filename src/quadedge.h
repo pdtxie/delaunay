@@ -57,7 +57,7 @@ struct edgeref {
     static void splice(edgeref a, edgeref b);
     static edgeref connect(edgeref a, edgeref b);
     static void delete_edge(edgeref e);
-    static void swap(edgeref e);
+    static void swap(edgeref e, bool fast);
 
     static bool rightof(edgeref e, vertex v);  // v right of e
     static bool leftof(edgeref e, vertex v);   // v right of e

@@ -173,22 +173,6 @@ edgeref locate_fast(vertex v, triangulation &tr) {
     return edgeref(v.loce, v.locr);
 }
 
-void fix_condflicts(vector<vertex *> o, vector<trianglerecord *> &n) {
-    for (vertex *v : o) {
-        // for each old vertex, reassign
-        if (!v->loce)
-            continue;
-
-        for (trianglerecord *t : n) {
-            if (t->rep.in_lrec(*v)) {
-                // if in triangle
-                t->conflicts.push_back(v);
-                v->loce = t->rep.e;
-                break;
-            }
-        }
-    }
-}
 
 void init_conflicts(triangulation &tr, int n) {
 	// tr must be super triangle at this point TODO: add assert??
@@ -246,6 +230,22 @@ void insert(vertex &v, triangulation &tr, bool fast) {
         e = base.oprev();
     } while (e.dest() != first);
 
+	// create trianglerecords
+	if (fast) {
+		vector<trianglerecord *> new_ts;
+		edgeref start = base, cur = start;
+
+		do {
+			trianglerecord *_t = new trianglerecord;
+			cur.assign_lrec(_t);
+			new_ts.push_back(_t);
+
+			cur = cur.onext().sym();
+		} while (cur != start);
+	}
+
+
+
     e = base.oprev();
 
     do {
@@ -256,7 +256,7 @@ void insert(vertex &v, triangulation &tr, bool fast) {
         bool inside = (o > 0 && det > 0) || (o < 0 && det < 0);
 
         if (edgeref::rightof(e, t.dest()) && inside) {
-            edgeref::swap(e);
+            edgeref::swap(e, fast);
             e = e.oprev();
         } else if (e.org() == first) {
             return;
