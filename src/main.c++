@@ -277,6 +277,7 @@ int main(int argc, char **argv) {
 
     argparse::ArgumentParser program("delaunay");
     program.add_argument("-f").required().help(".node file to triangulate");
+    program.add_argument("-o").required().help("output directory (.ele and .node files will be output here)").default_value("out");
     program.add_argument("-d").flag().help("debug mode");
     program.add_argument("-p").flag().help("performance test / record time");
     program.add_argument("--fast").flag().help(
@@ -292,6 +293,7 @@ int main(int argc, char **argv) {
     }
 
     string file = program.get<string>("-f");
+    string outdir = program.get<string>("-o");
     bool perf = program.get<bool>("-p");
     bool fast = program.get<bool>("--fast");
     bool random = program.get<bool>("--random");
@@ -304,12 +306,12 @@ int main(int argc, char **argv) {
         DEBUG = 1;
     }
 
-    path path = filesystem::current_path() /= file;
+    path inpath = filesystem::current_path() /= file;
 
     cout << "parsing nodes, shuffling + making super triangle..." << endl;
 
     /*[0]*/ chrono::steady_clock::time_point t0 = chrono::steady_clock::now();
-    vector<vertex> vs = parse_nodes(path);
+    vector<vertex> vs = parse_nodes(inpath);
     if (random) {
         cout << "shuffling vertices..." << endl;
         random_device rd;
@@ -342,13 +344,14 @@ int main(int argc, char **argv) {
         cout << format("[perf] inserted in {}ms", duration_cast<milliseconds>(t3 - t2).count())
              << endl;
 
-    cout << "writing output..." << endl;
-
     sort(tr.vs.begin(), tr.vs.end(),
          [](const vertex &v1, const vertex &v2) { return v1.id < v2.id; });
 
+    path outpath = filesystem::current_path() /= outdir;
+    cout << format("writing output to {} ...", outdir) << endl;
+
     /*[4]*/ chrono::steady_clock::time_point t4 = chrono::steady_clock::now();
-    write("/Users/pdt/workspace/classes/274/project/delaunay/out", tr);
+    write(outpath, tr);
     /*[5]*/ chrono::steady_clock::time_point t5 = chrono::steady_clock::now();
 
     if (perf)
@@ -357,3 +360,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
