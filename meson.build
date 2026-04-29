@@ -13,9 +13,12 @@ project(
 #   install : false,
 # )
 
+argparse_dep = dependency('argparse')
+
 voronoi_exe = executable(
   'voronoi',
   ['src/main.c++', 'src/quadedge.c++', 'src/predicates.c'],
+  dependencies: argparse_dep,
   # include_directories : triangle_inc,
   # link_with : triangle_lib,
   install : false,

@@ -4,3 +4,6 @@ out/
 ex/
 ex/*
 out/*
+subprojects/argparse
+subprojects/.wraplock
+.DS_Store

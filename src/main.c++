@@ -12,6 +12,8 @@ extern "C" {
 #include <set>
 #include <vector>
 
+#include <argparse/argparse.hpp>
+
 #include "quadedge.h"
 
 using namespace std;
@@ -208,8 +210,12 @@ void insert(vertex v, triangulation &tr) {
     } while (1);
 }
 
-int main(void) {
+int main(int argc, char** argv) {
     exactinit();
+
+	if (argc != 3) {
+		cout << "incorrect number of arguments" << endl;
+	}
 
     vector<vertex> vs = parse_nodes(
         "/Users/pdt/workspace/classes/274/project/voronoi/ex/633.node");
