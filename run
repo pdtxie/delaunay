@@ -1,4 +1,9 @@
 #!/bin/sh
 
-meson setup build
+set -ex
+
+meson setup build --buildtype=release
 meson compile -C build
+
+./build/delaunay "$@"
+
