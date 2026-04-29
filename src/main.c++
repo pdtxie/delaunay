@@ -171,7 +171,8 @@ edgeref locate_fast(vertex v, triangulation &tr) {
 }
 
 void init_conflicts(triangulation &tr, int n) {
-    // tr must be super triangle at this point TODO: add assert??
+    // NOTE: tr must be super triangle at this point
+	
     trianglerecord *t = new trianglerecord;
     t->rep = tr.e;
 

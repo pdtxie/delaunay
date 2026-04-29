@@ -86,7 +86,6 @@ bool edgeref::in_lrec(vertex &v) {
     edgeref b = a.lnext();
     edgeref c = b.lnext();
 
-    // TODO: double check...
     return !edgeref::rightof(a, v) && !edgeref::rightof(b, v) && !edgeref::rightof(c, v);
 }
 
