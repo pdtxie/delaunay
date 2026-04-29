@@ -126,7 +126,7 @@ triangulation super_triangle(vector<vertex> vs) {
 
     REAL dx = xmax - xmin, dy = ymax - ymin;
     REAL cx = (xmin + xmax) / 2;
-    REAL pad = max(dx, dy) + 100;
+    REAL pad = max(dx, dy) * 10;
 
     // A -> B -> C -> A (ccw)
     vertex A(vs.size() + 1, cx, ymax + pad),
@@ -351,6 +351,8 @@ int main(int argc, char **argv) {
              << endl;
 
     cout << "writing output..." << endl;
+
+	sort(tr.vs.begin(), tr.vs.end(), [](const vertex &v1, const vertex &v2){ return v1.id < v2.id; });
 
     /*[4]*/ chrono::steady_clock::time_point t4 = chrono::steady_clock::now();
     write("/Users/pdt/workspace/classes/274/project/delaunay/out", tr);
