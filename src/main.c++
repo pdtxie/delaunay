@@ -286,6 +286,8 @@ int main(int argc, char **argv) {
     program.add_argument("-p").flag().help("performance test / record time");
     program.add_argument("--fast").flag().help(
         "use fast point location. uses slow point location by default");
+    program.add_argument("--random").flag().help(
+        "randomise input points");
 
     try {
         program.parse_args(argc, argv);
@@ -296,11 +298,12 @@ int main(int argc, char **argv) {
     }
 
     string file = program.get<string>("-f");
-    bool fast = program.get<bool>("--fast");
     bool perf = program.get<bool>("-p");
+    bool fast = program.get<bool>("--fast");
+    bool random = program.get<bool>("--random");
 
-    cout << format("running on file: {} with {} mode", file,
-                   fast ? "fast" : "slow")
+    cout << format("running on file: {} with {} mode and {} points", file,
+                   fast ? "fast" : "slow", random ? "randomised" : "non-randomised")
          << endl;
     if (program.get<bool>("-d")) {
         cout << "[debug] using debug mode" << endl;
@@ -314,10 +317,12 @@ int main(int argc, char **argv) {
 
     /*[0]*/ chrono::steady_clock::time_point t0 = chrono::steady_clock::now();
     vector<vertex> vs = parse_nodes(path);
-	cout << "shuffling vertices..." << endl;
-	random_device rd;
-	mt19937 gen(rd());
-	shuffle(vs.begin(), vs.end(), gen);
+	if (random) {
+		cout << "shuffling vertices..." << endl;
+		random_device rd;
+		mt19937 gen(rd());
+		shuffle(vs.begin(), vs.end(), gen);
+	}
 
     int n = vs.size();
     triangulation tr = super_triangle(vs);
