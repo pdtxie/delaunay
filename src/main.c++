@@ -176,8 +176,6 @@ edgeref locate_fast(vertex v, triangulation &tr) {
 
 void init_conflicts(triangulation &tr, int n) {
 	// tr must be super triangle at this point TODO: add assert??
-	assert(tr.vs.size() == 3);
-
 	trianglerecord *t = new trianglerecord;
 	t->rep = tr.e;
 
@@ -196,12 +194,14 @@ void init_conflicts(triangulation &tr, int n) {
 void insert(vertex &v, triangulation &tr, bool fast) {
     edgeref e = fast ? locate_fast(v, tr) : locate_slow(v, tr);
 
-	trianglerecord *old_t = e.lrec();
 	vector<vertex *> old_conflicts;
 
-	if (fast && !old_t) {
+	if (fast) {
+		trianglerecord *old_t = e.lrec();
 		old_conflicts = old_t->conflicts;
 		old_t->alive = false;
+		v.loce = nullptr;
+		v.locr = 0;
 	}
 
     if (v == e.org() || v == e.dest())
@@ -233,15 +233,17 @@ void insert(vertex &v, triangulation &tr, bool fast) {
 	// create trianglerecords
 	if (fast) {
 		vector<trianglerecord *> new_ts;
-		edgeref start = base, cur = start;
+		edgeref start = base.sym(), cur = start;
 
 		do {
-			trianglerecord *_t = new trianglerecord;
-			cur.assign_lrec(_t);
-			new_ts.push_back(_t);
+			trianglerecord *nt = new trianglerecord;
+			cur.assign_lrec(nt);
+			new_ts.push_back(nt);
 
-			cur = cur.onext().sym();
+			cur = cur.onext();
 		} while (cur != start);
+
+		edgeref::fix_conflicts(old_conflicts, new_ts);
 	}
 
 
@@ -264,11 +266,6 @@ void insert(vertex &v, triangulation &tr, bool fast) {
             e = e.onext().lprev();
         }
     } while (1);
-
-	if (fast) {
-		v.loce = nullptr;
-		v.locr = 0;
-	}
 }
 
 int main(int argc, char **argv) {
@@ -308,8 +305,9 @@ int main(int argc, char **argv) {
     cout << "parsing nodes + making super triangle..." << endl;
 
     vector<vertex> vs = parse_nodes(path);
+	int n = vs.size();
     triangulation tr = super_triangle(vs);
-	init_conflicts(tr, vs.size());
+	if (fast) init_conflicts(tr, n);
 
     /*[1]*/ chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
@@ -319,10 +317,10 @@ int main(int argc, char **argv) {
              << endl;
 
     cout << "inserting vertices..." << endl;
-    for (vertex v : vs) {
-        insert(v, tr, fast);
+    for (int i = 0; i < n; i++) {
+        insert(tr.vs[i], tr, fast);
         if (DEBUG)
-            cout << "[debug] inserted: " << v << endl;
+            cout << "[debug] inserted: " << tr.vs[i] << endl;
     }
 
     /*[2]*/ chrono::steady_clock::time_point t2 = chrono::steady_clock::now();

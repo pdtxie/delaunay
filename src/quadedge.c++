@@ -113,7 +113,7 @@ edgeref edgeref::connect(edgeref a, edgeref b) {
     return e;
 }
 
-void fix_condflicts(std::vector<vertex *> o, std::vector<trianglerecord *> n) {
+void edgeref::fix_conflicts(std::vector<vertex *> &o, std::vector<trianglerecord *> n) {
     for (vertex *v : o) {
         // for each old vertex, reassign
         if (!v->loce)
@@ -124,6 +124,7 @@ void fix_condflicts(std::vector<vertex *> o, std::vector<trianglerecord *> n) {
                 // if in triangle
                 t->conflicts.push_back(v);
                 v->loce = t->rep.e;
+				v->locr = t->rep.r;
                 break;
             }
         }
@@ -137,13 +138,13 @@ void edgeref::swap(edgeref e, bool fast) {
 		trianglerecord *a = e.lrec();
 		trianglerecord *b = e.rrec();
 
-		if (!a) {
+		if (a) {
 			old.insert(old.end(), a->conflicts.begin(), a->conflicts.end());
 			a->alive = false;
 		}
 
-		if (!b) {
-			old.insert(old.end(), a->conflicts.begin(), b->conflicts.end());
+		if (b) {
+			old.insert(old.end(), b->conflicts.begin(), b->conflicts.end());
 			b->alive = false;
 		}
 	}
@@ -167,7 +168,7 @@ void edgeref::swap(edgeref e, bool fast) {
 		e.assign_lrec(c);
 		e.sym().assign_lrec(d);
 
-		fix_condflicts(old, {c, d});
+		edgeref::fix_conflicts(old, {c, d});
 	}
 }
 

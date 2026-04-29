@@ -77,6 +77,8 @@ struct edgeref {
 
 	void assign_lrec(trianglerecord *t);
 	bool in_lrec(vertex &v);
+
+	static void fix_conflicts(std::vector<vertex *> &o, std::vector<trianglerecord *> n);
 };
 
 // for fast point location
