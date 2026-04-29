@@ -12,15 +12,18 @@ extern "C" {
 #include <limits>
 #include <set>
 #include <vector>
+#include <chrono>
 
 #include <argparse/argparse.hpp>
 
 #include "quadedge.h"
 
-bool DEBUG = 1;
+bool DEBUG = 0;
 
 using namespace std;
+using namespace std::chrono;
 using filesystem::path;
+
 
 // parse input .node
 vector<vertex> parse_nodes(string path) {
@@ -220,8 +223,9 @@ int main(int argc, char** argv) {
 
 	argparse::ArgumentParser program("voronoi");
 	program.add_argument("-f").required().help(".node file to triangulate");
+	program.add_argument("-d").flag().help("debug mode");
+	program.add_argument("-p").flag().help("performance test / record time");
 	program.add_argument("--fast").flag().help("use fast point location. uses slow point location by default");
-	program.add_argument("-d").flag().help("debug / verbose mode");
 
 	try {
 		program.parse_args(argc, argv);
@@ -233,32 +237,48 @@ int main(int argc, char** argv) {
 
 	string file = program.get<string>("-f");
 	bool fast = program.get<bool>("--fast");
+	bool perf = program.get<bool>("-p");
 
-	cout << format("running on file: {}.node with {} mode", file, fast ? "fast" : "slow") << endl;
+
+
+	cout << format("running on file: {} with {} mode", file, fast ? "fast" : "slow") << endl;
 	if (program.get<bool>("-d")) {
 		cout << "[debug] using debug mode" << endl;
 		DEBUG = 1;
 	}
 
-	path path = filesystem::current_path() /= "ex";
+	path path = filesystem::current_path() /= file;
 
-    vector<vertex> vs = parse_nodes(path /= format("{}.node", file));
-
-    cout << "[success] parsed nodes" << endl;
+	chrono::steady_clock::time_point t0 = chrono::steady_clock::now();
+    cout << "parsing nodes + making super triangle..." << endl;
+    vector<vertex> vs = parse_nodes(path);
 
     triangulation tr = super_triangle(vs);
 
-    cout << "[success] made super triangle" << endl;
+	chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
+	if (perf)
+		cout << format("[perf] parsed + made super triangle in {}ms", duration_cast<milliseconds>(t1 - t0).count()) << endl;
+
+	cout << "inserting vertices..." << endl;
     for (vertex v : vs) {
         insert(v, tr);
 		if (DEBUG)
 			cout << "[debug] inserted: " << v << endl;
     }
 
-    cout << "[success] writing output..." << endl;
+	chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
 
+	if (perf)
+		cout << format("[perf] inserted in {}ms", duration_cast<milliseconds>(t2 - t1).count()) << endl;
+
+    cout << "writing output..." << endl;
     write("/Users/pdt/workspace/classes/274/project/voronoi/out", tr);
+
+	chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
+
+	if (perf)
+		cout << format("[perf] wrote output in {}ms", duration_cast<milliseconds>(t3 - t2).count()) << endl;
 
     return 0;
 }
