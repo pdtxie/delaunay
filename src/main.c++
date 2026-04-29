@@ -151,7 +151,7 @@ triangulation super_triangle(vector<vertex> vs) {
     return triangulation{AB, vs, {AB, BC, CA}};
 }
 
-edgeref locate(vertex v, triangulation &tr) {
+edgeref locate_slow(vertex v, triangulation &tr) {
     edgeref e = tr.e;
 
     do {
@@ -169,8 +169,12 @@ edgeref locate(vertex v, triangulation &tr) {
     } while (1);
 }
 
-void insert(vertex v, triangulation &tr) {
-    edgeref e = locate(v, tr);
+edgeref locate_fast(vertex v, triangulation& tr) {
+	
+}
+
+void insert(vertex v, triangulation &tr, bool fast) {
+    edgeref e = fast ? locate_fast(v, tr) : locate_slow(v, tr);
 
     if (v == e.org() || v == e.dest())
         return;

@@ -1,8 +1,20 @@
 #include <iostream>
+#include <vector>
+
+struct edgeref;
+struct quadedge;
+struct trianglerecord;
+
 
 struct vertex {
     int id;
     double x, y;
+	
+	// NOTE: for fast point location
+	// if null => inserted, none to point to
+	// otherwise, oriented edge of containing triangle
+	quadedge *locq = nullptr;
+	int locr = 0;
 
     // TODO: this might be bad
     bool operator==(const vertex &other) const {
@@ -13,8 +25,6 @@ struct vertex {
         return !(*this == other);
     }
 };
-
-struct quadedge;
 
 struct edgeref {
     quadedge *e = nullptr;
@@ -44,6 +54,9 @@ struct edgeref {
     vertex &org();
     vertex &dest();
 
+	trianglerecord *&lrecord();
+	trianglerecord *&rrecord();
+
     static void splice(edgeref a, edgeref b);
     static edgeref connect(edgeref a, edgeref b);
     static void delete_edge(edgeref e);
@@ -61,9 +74,18 @@ struct edgeref {
     }
 };
 
+// for fast point location
+struct trianglerecord {
+	edgeref rep;
+	std::vector<vertex *> conflicts;  // uninserted
+	bool alive = true;
+};
+
 struct edgerecord {
-    vertex data;
+	vertex data;
     edgeref next;
+
+	trianglerecord *face = nullptr;
 };
 
 struct quadedge {
@@ -75,6 +97,8 @@ struct triangulation {
     std::vector<vertex> vs;
     std::vector<edgeref> es;
 };
+
+
 
 // debugging
 std::ostream &operator<<(std::ostream &os, const vertex &v);

@@ -64,6 +64,14 @@ edgeref edgeref::dnext() {
     return this->sym().onext().sym();
 }
 
+trianglerecord *&edgeref::lrecord() {
+	return this->e->es[this->r].face;
+}
+
+trianglerecord *&rrecord(edgeref e) {
+
+}
+
 // topology methods
 void edgeref::splice(edgeref a, edgeref b) {
     edgeref alpha = a.onext().rot(), beta = b.onext().rot();
